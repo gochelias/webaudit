@@ -23,6 +23,13 @@ var rootCmd = &cobra.Command{
 		parallelism, _ := cmd.Flags().GetInt("parallelism")
 		delay, _ := cmd.Flags().GetInt("delay")
 
+		if url == "" {
+			log.Fatal("Error: required flag 'url' is empty")
+		}
+		if bypass == "" {
+			log.Fatal("Error: required flag 'vercel-bypass' is empty")
+		}
+
 		figure.NewFigure("webaudit", "smslant", true).Print()
 		fmt.Println("")
 
