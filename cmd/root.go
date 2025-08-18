@@ -31,11 +31,10 @@ var rootCmd = &cobra.Command{
 			log.Fatal("Error: required flag 'vercel-bypass' is empty")
 		}
 
-		figure.NewFigure("webaudit", "smslant", true).Print()
+		fmt.Printf("%s\n", figure.NewFigure("webaudit", "smslant", true))
 		if ci {
 			os.Stdout.Sync()
 		}
-		fmt.Println("")
 
 		s, _ := gospinner.NewSpinner(gospinner.BouncingBar)
 		if !ci {

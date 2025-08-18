@@ -1,6 +1,7 @@
 package crawler
 
 import (
+	"bytes"
 	"fmt"
 	"log"
 	"net/http"
@@ -93,14 +94,22 @@ func Start(baseURL string, s *gospinner.Spinner, config models.Config) (*Crawler
 		{utils.GetStatus(crawler.Data.Debug, "🔍"), "Debug", fmt.Sprintf("%d", len(crawler.Data.Debug))},
 	}
 
-	fmt.Println("")
-	table := tablewriter.NewTable(os.Stdout, tablewriter.WithRenderer(renderer.NewMarkdown()))
-	table.Header(header)
-	table.Bulk(t)
-	table.Render()
-
 	if config.IsCI {
-		os.Stdout.Sync()
+		buf := new(bytes.Buffer)
+
+		fmt.Println("")
+		table := tablewriter.NewTable(os.Stdout, tablewriter.WithRenderer(renderer.NewMarkdown()))
+		table.Header(header)
+		table.Bulk(t)
+		table.Render()
+
+		fmt.Println(buf.String())
+	} else {
+		fmt.Println("")
+		table := tablewriter.NewTable(os.Stdout, tablewriter.WithRenderer(renderer.NewMarkdown()))
+		table.Header(header)
+		table.Bulk(t)
+		table.Render()
 	}
 
 	return crawler, err
