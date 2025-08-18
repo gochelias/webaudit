@@ -22,6 +22,7 @@ var rootCmd = &cobra.Command{
 		bypass, _ := cmd.Flags().GetString("vercel-bypass")
 		parallelism, _ := cmd.Flags().GetInt("parallelism")
 		delay, _ := cmd.Flags().GetInt("delay")
+		ci, _ := cmd.Flags().GetBool("ci")
 
 		if url == "" {
 			log.Fatal("Error: required flag 'url' is empty")
@@ -31,15 +32,21 @@ var rootCmd = &cobra.Command{
 		}
 
 		figure.NewFigure("webaudit", "smslant", true).Print()
+		if ci {
+			os.Stdout.Sync()
+		}
 		fmt.Println("")
 
 		s, _ := gospinner.NewSpinner(gospinner.BouncingBar)
-		s.Start("Configuration")
+		if !ci {
+			s.Start("Configuration")
+		}
 
 		cr, err := crawler.Start(url, s, models.Config{
 			Parallelism:  parallelism,
 			Delay:        time.Duration(delay) * time.Millisecond,
 			VercelBypass: bypass,
+			IsCI:         ci,
 		})
 		if err != nil {
 			log.Fatal(err)
@@ -66,6 +73,7 @@ func init() {
 	rootCmd.Flags().String("vercel-bypass", "", "Secret to bypass Vercel Protection (VERCEL_AUTOMATION_BYPASS_SECRET)")
 	rootCmd.Flags().Int("parallelism", 1, "Number of the maximum allowed concurrent requests")
 	rootCmd.Flags().Int("delay", 1000, "Delay between requests in milliseconds")
+	rootCmd.Flags().Bool("ci", false, "Run in Continuous Integration mode")
 
 	rootCmd.MarkFlagRequired("url")
 	rootCmd.MarkFlagRequired("vercel-bypass")

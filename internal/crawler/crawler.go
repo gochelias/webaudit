@@ -2,6 +2,7 @@ package crawler
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -22,6 +23,7 @@ type Crawler struct {
 	Data       *models.Report
 	TotalPages int
 	Spinner    *gospinner.Spinner
+	IsCI       bool
 	baseURL    string
 	collector  *colly.Collector
 	config     models.Config
@@ -29,7 +31,9 @@ type Crawler struct {
 
 func Start(baseURL string, s *gospinner.Spinner, config models.Config) (*Crawler, error) {
 	startTime := time.Now()
-	s.SetMessage("Ready")
+	if !config.IsCI {
+		s.SetMessage("Ready")
+	}
 
 	u, err := url.Parse(baseURL)
 	if err != nil {
@@ -45,7 +49,9 @@ func Start(baseURL string, s *gospinner.Spinner, config models.Config) (*Crawler
 		Delay:       config.Delay,
 	})
 
-	s.Succeed()
+	if !config.IsCI {
+		s.Succeed()
+	}
 
 	data := report.New()
 
@@ -57,15 +63,24 @@ func Start(baseURL string, s *gospinner.Spinner, config models.Config) (*Crawler
 		config:    config,
 	}
 
-	s.Start("Starting")
-	crawler.setup()
+	if !config.IsCI {
+		s.Start("Starting")
+	} else {
+		log.Printf("Auditing...")
+	}
 
+	crawler.setup()
 	c.Visit(u.String())
 
 	elapsed := time.Since(startTime)
-	s.SetMessage(fmt.Sprintf("%d pages scanned in %g", crawler.TotalPages, elapsed.Seconds()))
-	s.Succeed()
-	s.Finish()
+
+	if !config.IsCI {
+		s.SetMessage(fmt.Sprintf("%d pages scanned in %g", crawler.TotalPages, elapsed.Seconds()))
+		s.Succeed()
+		s.Finish()
+	} else {
+		log.Printf("%d pages scanned in %g", crawler.TotalPages, elapsed.Seconds())
+	}
 
 	header := []string{"Status", "Issues with", "Total"}
 
@@ -84,6 +99,10 @@ func Start(baseURL string, s *gospinner.Spinner, config models.Config) (*Crawler
 	table.Bulk(t)
 	table.Render()
 
+	if config.IsCI {
+		os.Stdout.Sync()
+	}
+
 	return crawler, err
 }
 
@@ -93,7 +112,10 @@ func (cr *Crawler) setup() {
 		r.Headers.Set("x-vercel-set-bypass-cookie", "true")
 
 		cr.TotalPages++
-		cr.Spinner.SetMessage(fmt.Sprintf("(%d pages) %s", cr.TotalPages, utils.FormatURL(r.URL.String())))
+
+		if !cr.config.IsCI {
+			cr.Spinner.SetMessage(fmt.Sprintf("(%d pages) %s", cr.TotalPages, utils.FormatURL(r.URL.String())))
+		}
 	})
 
 	cr.collector.RedirectHandler = func(req *http.Request, via []*http.Request) error {

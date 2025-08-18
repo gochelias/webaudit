@@ -8,6 +8,7 @@ type Config struct {
 	Parallelism  int
 	Delay        time.Duration
 	VercelBypass string
+	IsCI         bool
 }
 
 type Report struct {
